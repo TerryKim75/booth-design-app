@@ -1,17 +1,27 @@
-import { BOOTH_SIZES, type BoothSize } from '../types/booth';
+import { BOOTH_SIZES, type BoothSize, type OpenFaces, getWallConfig } from '../types/booth';
 
 interface Props {
   selected: BoothSize | null;
+  openFaces: OpenFaces;
   onSelect: (size: BoothSize) => void;
+  onOpenFacesChange: (faces: OpenFaces) => void;
   onNext: () => void;
 }
 
-export default function Step1SizeSelect({ selected, onSelect, onNext }: Props) {
+const OPEN_OPTIONS: { value: OpenFaces; label: string; desc: string }[] = [
+  { value: 1, label: '1면 오픈', desc: '정면만 개방 (인라인)' },
+  { value: 2, label: '2면 오픈', desc: '정면+측면 (코너)' },
+  { value: 3, label: '3면 오픈', desc: '3면 개방 (페닌슐라)' },
+  { value: 4, label: '4면 오픈', desc: '전면 개방 (아일랜드)' },
+];
+
+export default function Step1SizeSelect({ selected, openFaces, onSelect, onOpenFacesChange, onNext }: Props) {
   return (
     <div>
       <h2 className="text-xl font-bold text-gray-800 mb-1">부스 크기 선택</h2>
-      <p className="text-sm text-gray-500 mb-6">전시에 사용할 부스의 기본 크기를 선택해 주세요.</p>
+      <p className="text-sm text-gray-500 mb-6">부스 크기와 개방면을 선택해 주세요.</p>
 
+      {/* Size cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         {BOOTH_SIZES.map((size) => {
           const isSelected = selected?.id === size.id;
@@ -25,8 +35,7 @@ export default function Step1SizeSelect({ selected, onSelect, onNext }: Props) {
               {isSelected && (
                 <span className="absolute top-3 right-3 w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs">✓</span>
               )}
-              {/* mini booth diagram */}
-              <BoothMini width={size.width} depth={size.depth} />
+              <BoothMini width={size.width} depth={size.depth} openFaces={openFaces} />
               <div className="mt-3">
                 <p className="font-semibold text-gray-800 text-sm">{size.label}</p>
                 <p className="text-xs text-gray-500 mt-1">{size.description}</p>
@@ -34,6 +43,27 @@ export default function Step1SizeSelect({ selected, onSelect, onNext }: Props) {
             </button>
           );
         })}
+      </div>
+
+      {/* Open-face selector */}
+      <div className="mb-8">
+        <h3 className="text-sm font-semibold text-gray-700 mb-3">개방면 선택</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {OPEN_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => onOpenFacesChange(opt.value)}
+              className={`p-4 rounded-xl border-2 text-center transition-all
+                ${openFaces === opt.value
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-200 bg-white hover:border-blue-300'}`}
+            >
+              <OpenFaceMini openFaces={opt.value} />
+              <p className="text-xs font-semibold text-gray-800 mt-2">{opt.label}</p>
+              <p className="text-xs text-gray-400 mt-0.5">{opt.desc}</p>
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="flex justify-end">
@@ -50,24 +80,46 @@ export default function Step1SizeSelect({ selected, onSelect, onNext }: Props) {
   );
 }
 
-function BoothMini({ width, depth }: { width: number; depth: number }) {
+function BoothMini({ width, depth, openFaces }: { width: number; depth: number; openFaces: OpenFaces }) {
   const MAX = 80;
   const maxDim = Math.max(width, depth);
   const scale = MAX / maxDim;
   const w = width * scale;
   const d = depth * scale;
   const pad = 10;
+  const walls = getWallConfig(openFaces);
   return (
     <svg width={MAX + pad * 2} height={MAX + pad * 2} className="mx-auto">
-      <rect x={pad} y={pad} width={w} height={d} fill="#f0ede8" stroke="#c8bfa8" strokeWidth={1.5} />
-      {/* back wall */}
-      <rect x={pad} y={pad} width={w} height={4} fill="#c8bfa8" />
-      {/* left wall */}
-      <rect x={pad} y={pad} width={4} height={d} fill="#c8bfa8" />
-      {/* right wall */}
-      <rect x={pad + w - 4} y={pad} width={4} height={d} fill="#c8bfa8" />
-      {/* open front dashed */}
-      <line x1={pad} y1={pad + d} x2={pad + w} y2={pad + d} stroke="#4ade80" strokeWidth={1.5} strokeDasharray="4,3" />
+      <rect x={pad} y={pad} width={w} height={d} fill="#f0ede8" />
+      <WallLines walls={walls} w={w} d={d} pad={pad} wt={4} />
     </svg>
+  );
+}
+
+function OpenFaceMini({ openFaces }: { openFaces: OpenFaces }) {
+  const walls = getWallConfig(openFaces);
+  const sz = 54; const pad = 10; const w = sz - pad * 2; const d = sz - pad * 2;
+  return (
+    <svg width={sz} height={sz} className="mx-auto">
+      <rect x={pad} y={pad} width={w} height={d} fill="#f0ede8" />
+      <WallLines walls={walls} w={w} d={d} pad={pad} wt={4} />
+    </svg>
+  );
+}
+
+function WallLines({ walls, w, d, pad, wt }: {
+  walls: ReturnType<typeof getWallConfig>;
+  w: number; d: number; pad: number; wt: number;
+}) {
+  const wallFill = '#c8bfa8';
+  const openStroke = '#4ade80';
+  const dash = '4,3';
+  return (
+    <>
+      {walls.back  ? <rect x={pad}     y={pad}     width={w}  height={wt} fill={wallFill} /> : <line x1={pad}   y1={pad}   x2={pad+w} y2={pad}   stroke={openStroke} strokeWidth={2} strokeDasharray={dash} />}
+      {walls.left  ? <rect x={pad}     y={pad}     width={wt} height={d}  fill={wallFill} /> : <line x1={pad}   y1={pad}   x2={pad}   y2={pad+d} stroke={openStroke} strokeWidth={2} strokeDasharray={dash} />}
+      {walls.right ? <rect x={pad+w-wt} y={pad}    width={wt} height={d}  fill={wallFill} /> : <line x1={pad+w} y1={pad}   x2={pad+w} y2={pad+d} stroke={openStroke} strokeWidth={2} strokeDasharray={dash} />}
+      {walls.front ? <rect x={pad}     y={pad+d-wt} width={w} height={wt} fill={wallFill} /> : <line x1={pad}   y1={pad+d} x2={pad+w} y2={pad+d} stroke={openStroke} strokeWidth={2} strokeDasharray={dash} />}
+    </>
   );
 }
