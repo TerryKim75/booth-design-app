@@ -60,9 +60,13 @@ export default function BoothCanvas({ config }: Props) {
   }
 
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="flex flex-col items-center gap-2 w-full">
       <p className="text-xs text-gray-500 uppercase tracking-widest">평면도 (Top View)</p>
-      <svg width={svgW} height={svgH} className="rounded-xl shadow-md border border-gray-200 bg-white">
+      <svg
+        viewBox={`0 0 ${svgW} ${svgH}`}
+        className="w-full max-h-72 rounded-xl shadow-md border border-gray-200 bg-white"
+        style={{ aspectRatio: `${svgW} / ${svgH}` }}
+      >
         {/* floor */}
         <rect x={PADDING} y={PADDING} width={W} height={D} fill={floorColor} />
 
