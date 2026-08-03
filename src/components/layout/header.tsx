@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { label: "시스템 소개", href: "/system" },
   { label: "포트폴리오", href: "/portfolio" },
   { label: "시스템 부스 디자인", href: "/booth-design" },
+  { label: "디자인 자동화", href: "/booth-designer" },
   { label: "비품 임대", href: "/rental" },
   { label: "다운로드", href: "/downloads" },
 ];

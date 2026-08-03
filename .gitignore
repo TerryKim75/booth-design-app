@@ -36,6 +36,10 @@ yarn-error.log*
 # vercel
 .vercel
 
+# local dev file-upload fallback (문의 첨부파일 로컬 저장소, Supabase 미연결 시에만 사용)
+/public/uploads
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+supabase/.temp/
