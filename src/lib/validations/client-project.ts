@@ -3,7 +3,7 @@ import { z } from "zod";
 const emptyToNull = (v: unknown) => (v === "" ? null : v);
 
 export const clientProjectFormSchema = z.object({
-  designCode: z.string().min(1, "디자인번호를 입력해주세요."),
+  designCode: z.string().optional().default(""),
   clientId: z.string().uuid("고객사를 선택해주세요."),
   title: z.string().min(1, "프로젝트명을 입력해주세요."),
   stage: z.enum(["ongoing", "completed"]),

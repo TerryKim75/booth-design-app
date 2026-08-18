@@ -6,7 +6,8 @@ import { requireStaffOrAdmin, requireAdmin } from "@/lib/auth";
 import { formatActionError } from "@/lib/form-error";
 import { clientProjectFormSchema } from "@/lib/validations/client-project";
 import {
-  createClientProject, updateClientProject, deleteClientProject, type ClientProjectInput,
+  createClientProject, updateClientProject, deleteClientProject,
+  generateNextClientProjectDesignCode, type ClientProjectInput,
 } from "@/lib/data/client-projects";
 import { deleteClientProjectFile } from "@/lib/data/client-project-files";
 import type { ClientProjectStage } from "@/types/domain";
@@ -24,7 +25,9 @@ export async function saveNewProject(_prev: FormState, formData: FormData): Prom
   const profile = await requireStaffOrAdmin();
   let id: string;
   try {
-    const project = await createClientProject(parseInput(formData), profile.id);
+    const input = parseInput(formData);
+    if (!input.designCode) input.designCode = generateNextClientProjectDesignCode();
+    const project = await createClientProject(input, profile.id);
     id = project.id;
   } catch (err) {
     return { error: formatActionError(err, "저장 중 오류가 발생했습니다.") };
@@ -36,7 +39,9 @@ export async function saveNewProject(_prev: FormState, formData: FormData): Prom
 export async function updateExistingProject(id: string, _prev: FormState, formData: FormData): Promise<FormState> {
   await requireStaffOrAdmin();
   try {
-    await updateClientProject(id, parseInput(formData));
+    const input = parseInput(formData);
+    if (!input.designCode) input.designCode = generateNextClientProjectDesignCode();
+    await updateClientProject(id, input);
   } catch (err) {
     return { error: formatActionError(err, "저장 중 오류가 발생했습니다.") };
   }

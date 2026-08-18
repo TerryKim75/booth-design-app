@@ -33,7 +33,7 @@ export async function listUsers(): Promise<AsoUser[]> {
   return (data ?? []).map(rowToUser);
 }
 
-/** 특정 고객사에 연결된 로그인 계정 목록 */
+/** 특정 고객사에 연결된 로그인 계정 목록 — 비밀번호는 보관된 경우에만 함께 반환한다. */
 export async function listClientAccounts(clientId: string): Promise<AsoUser[]> {
   if (!isSupabaseConfigured()) {
     return getLocalStore().users.filter((u) => u.role === "client" && u.clientId === clientId);
@@ -46,7 +46,16 @@ export async function listClientAccounts(clientId: string): Promise<AsoUser[]> {
     .eq("client_id", clientId)
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return (data ?? []).map(rowToUser);
+  const users = (data ?? []).map(rowToUser);
+  if (users.length === 0) return users;
+
+  const { data: passwords, error: pwError } = await supabase
+    .from("client_account_passwords")
+    .select("user_id, password")
+    .in("user_id", users.map((u) => u.id));
+  if (pwError) throw pwError;
+  const passwordByUserId = new Map((passwords ?? []).map((p) => [p.user_id, p.password]));
+  return users.map((u) => ({ ...u, password: passwordByUserId.get(u.id) ?? null }));
 }
 
 export interface NewUserInput {
@@ -100,7 +109,37 @@ export async function createUserAccount(input: NewUserInput): Promise<AsoUser> {
     .select("*")
     .single();
   if (error) throw error;
+
+  if (input.role === "client") {
+    const { error: pwError } = await admin
+      .from("client_account_passwords")
+      .upsert({ user_id: created.user.id, password: input.password, updated_at: new Date().toISOString() });
+    if (pwError) throw pwError;
+  }
+
   return rowToUser(data);
+}
+
+/**
+ * 고객사 계정의 비밀번호를 재설정한다 — 이미 생성되어 있어 원래 비밀번호를 알 수 없는
+ * 계정(client_account_passwords 도입 이전 생성분 포함)도 이 경로로 새 비밀번호를 부여하면
+ * 이후 관리자 화면에서 조회할 수 있다.
+ */
+export async function resetClientAccountPassword(userId: string, password: string): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    const store = getLocalStore();
+    const u = store.users.find((x) => x.id === userId);
+    if (u) u.password = password;
+    return;
+  }
+  const admin = createAdminSupabaseClient();
+  const { error: authError } = await admin.auth.admin.updateUserById(userId, { password });
+  if (authError) throw authError;
+
+  const { error: pwError } = await admin
+    .from("client_account_passwords")
+    .upsert({ user_id: userId, password, updated_at: new Date().toISOString() });
+  if (pwError) throw pwError;
 }
 
 export async function setUserStatus(id: string, status: UserStatus): Promise<void> {

@@ -15,6 +15,8 @@ export interface AsoUser {
   clientId: string | null;
   createdAt: string;
   updatedAt: string;
+  /** 고객사 계정에 한해 관리자 조회용으로 보관되는 현재 비밀번호. 미보관 시 null. */
+  password?: string | null;
 }
 
 export type ContentStatus = "draft" | "published" | "unpublished";

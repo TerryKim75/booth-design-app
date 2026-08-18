@@ -7,6 +7,7 @@ import { listClientAccounts } from "@/lib/data/users";
 import { listClientProjects } from "@/lib/data/client-projects";
 import { ClientControls } from "@/app/admin/clients/[id]/client-controls";
 import { ClientAccountForm } from "@/app/admin/clients/[id]/client-account-form";
+import { ResetPasswordForm } from "@/app/admin/clients/[id]/reset-password-form";
 
 const STAGE_LABELS: Record<string, string> = { ongoing: "진행중", completed: "완료" };
 
@@ -95,11 +96,12 @@ export default async function ClientDetailPage({ params }: PageProps) {
         {isAdmin ? (
           <div className="space-y-4">
             <div className="bg-white border border-aso-line overflow-x-auto">
-              <table className="w-full text-sm min-w-[480px]">
+              <table className="w-full text-sm min-w-[640px]">
                 <thead>
                   <tr className="text-left text-aso-muted border-b border-aso-line">
                     <th className="p-3 font-medium">이름</th>
                     <th className="p-3 font-medium">이메일</th>
+                    <th className="p-3 font-medium">비밀번호</th>
                     <th className="p-3 font-medium">상태</th>
                   </tr>
                 </thead>
@@ -108,11 +110,19 @@ export default async function ClientDetailPage({ params }: PageProps) {
                     <tr key={a.id} className="border-b border-aso-line last:border-0">
                       <td className="p-3 font-medium text-aso-black">{a.name}</td>
                       <td className="p-3 font-num text-aso-charcoal-2/70">{a.email}</td>
+                      <td className="p-3 space-y-1">
+                        {a.password ? (
+                          <span className="font-num text-aso-charcoal-2/70">{a.password}</span>
+                        ) : (
+                          <p className="text-xs text-aso-muted">미확인 (재설정 필요)</p>
+                        )}
+                        <ResetPasswordForm key={a.password ?? "none"} clientId={client.id} userId={a.id} />
+                      </td>
                       <td className="p-3">{a.status === "active" ? "활성" : "비활성"}</td>
                     </tr>
                   ))}
                   {accounts.length === 0 && (
-                    <tr><td colSpan={3} className="p-6 text-center text-aso-muted">생성된 로그인 계정이 없습니다.</td></tr>
+                    <tr><td colSpan={4} className="p-6 text-center text-aso-muted">생성된 로그인 계정이 없습니다.</td></tr>
                   )}
                 </tbody>
               </table>

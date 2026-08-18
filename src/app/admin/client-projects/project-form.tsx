@@ -36,7 +36,7 @@ export function ProjectForm({
   return (
     <form action={formAction} className="space-y-8 max-w-3xl">
       <Section legend="기본 정보">
-        <TextField name="designCode" label="디자인번호" defaultValue={initial?.designCode ?? defaultDesignCode} required />
+        <TextField name="designCode" label="디자인번호 (비워두면 자동 생성)" defaultValue={initial?.designCode ?? defaultDesignCode} />
         <SelectField name="clientId" label="고객사" defaultValue={initial?.clientId ?? clients[0]?.id} options={clientOptions} labels={clientLabels} />
         <TextField name="title" label="프로젝트명" defaultValue={initial?.title} required full />
         <SelectField name="stage" label="진행 상태" defaultValue={initial?.stage ?? "ongoing"} options={["ongoing", "completed"]} labels={STAGE_LABELS} />

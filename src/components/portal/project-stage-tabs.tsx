@@ -5,10 +5,11 @@ import { ProjectCard } from "@/components/portal/project-card";
 import type { ClientProject, ClientProjectStage } from "@/types/domain";
 
 export function ProjectStageTabs({ projects }: { projects: ClientProject[] }) {
-  const [stage, setStage] = useState<ClientProjectStage>("ongoing");
-
   const ongoing = projects.filter((p) => p.stage === "ongoing");
   const completed = projects.filter((p) => p.stage === "completed");
+  // 진행중 프로젝트가 하나도 없고 완료된 프로젝트만 있는 경우, 첫 화면이 빈 탭이라
+  // "등록한 프로젝트가 안 보인다"는 오인을 유발하지 않도록 완료 탭을 기본으로 보여준다.
+  const [stage, setStage] = useState<ClientProjectStage>(ongoing.length === 0 && completed.length > 0 ? "completed" : "ongoing");
   const shown = stage === "ongoing" ? ongoing : completed;
 
   return (

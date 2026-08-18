@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
@@ -60,7 +61,7 @@ export async function createClient(input: ClientInput, createdBy: string | null)
     const now = new Date().toISOString();
     const client: Client = {
       ...input,
-      id: `client-${Date.now()}`,
+      id: randomUUID(),
       status: "active",
       createdBy,
       createdAt: now,
