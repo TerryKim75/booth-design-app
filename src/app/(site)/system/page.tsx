@@ -1,16 +1,43 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Container } from "@/components/ui/container";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { SafeImage } from "@/components/ui/safe-image";
 import { ButtonLink } from "@/components/ui/button";
-import { Layers, Repeat, PenTool, Wrench, CheckCircle2 } from "lucide-react";
+import { Layers, Repeat, PenTool, Wrench, CheckCircle2, ArrowRight } from "lucide-react";
 import { listFrameSpecs } from "@/lib/data/frame-specs";
+import { FaqSection } from "@/components/seo/faq-section";
+import { JsonLd } from "@/components/seo/json-ld";
 
 export const metadata: Metadata = {
-  title: "시스템 소개",
-  description: "ASO System(Aluminum Solution Organizer)의 철학, 프레임 규격, 조립 방식과 확장 가능성을 소개합니다.",
+  title: "시스템부스 시공 전문 | 55mm·124mm 알루미늄 & 패브릭 모듈러 시스템",
+  description:
+    "ASO System(Aluminum Solution Organizer)은 시스템부스 시공을 전문으로 합니다. 55mm/124mm 알루미늄 프레임 규격, 옥타놀름 호환 조인트, SEG 패브릭 모듈러 시스템까지 — 설계부터 재구성까지의 전 과정을 소개합니다.",
   alternates: { canonical: "/system" },
 };
+
+const SYSTEM_FAQ = [
+  {
+    question: "시스템부스 시공 전문 업체를 고를 때 무엇을 확인해야 하나요?",
+    answer:
+      "프레임 규격(55mm/124mm 등 표준화 여부), 조인트 호환성, 재사용 가능한 모듈 재고 보유량, 설계·시공·해체·재구성까지의 원스톱 대응 여부를 확인해야 합니다. ASO System은 표준 프레임과 전용 조인트로 설계부터 재구성까지 자체 대응합니다.",
+  },
+  {
+    question: "패브릭 모듈러 시스템이란 무엇인가요?",
+    answer:
+      "패브릭 모듈러 시스템은 알루미늄 프레임에 텐션 패브릭(SEG, Silicone Edge Graphic)을 씌워 이음새 없는 대형 그래픽을 연출하는 시스템부스 방식입니다. 프레임 노출 없이 매끄러운 면을 완성할 수 있어 브랜드 그래픽 중심의 부스에 적합합니다. 자세한 내용은 아래 패브릭 모듈러 시스템 페이지를 참고하세요.",
+  },
+  {
+    question: "옥타놀름(Octanorm) 시스템과 ASO 시스템의 차이는 무엇인가요?",
+    answer:
+      "옥타놀름은 가장 널리 쓰이는 표준 규격 알루미늄 조립 부스 시스템입니다. ASO System은 이와 호환되는 표준 프레임 규격(55mm/124mm)을 기반으로 하되, 자체 조인트 설계와 SEG 패브릭 결합으로 시공 속도와 마감 품질을 높인 시스템부스를 제공합니다.",
+  },
+  {
+    question: "시스템부스는 목공 부스와 비교해 어떤 장점이 있나요?",
+    answer:
+      "시스템부스는 표준화된 모듈을 재사용하므로 전시가 끝난 뒤 폐기물이 거의 발생하지 않고, 다음 전시회 규격에 맞춰 재조립할 수 있어 비용과 환경 부담을 동시에 줄입니다. 목공 부스는 매번 신규 제작·폐기가 필요한 반면, 시스템부스는 동일 자재를 반복 사용해 ROI가 높습니다.",
+  },
+];
 
 const PHILOSOPHY = [
   { icon: Layers, title: "Modular", desc: "표준화된 모듈의 조합만으로 어떤 규모의 공간도 구성합니다." },
@@ -109,6 +136,23 @@ export default async function SystemPage() {
             title="조립·연결 방식과 그래픽 설치"
             description="모든 프레임은 동일한 조인트 커넥터로 연결되며, 그래픽은 프레임과 분리된 별도 패널로 제작되어 구조 교체 없이 디자인만 바꿀 수 있습니다. 포맥스, SEG, 월그래픽 등 소재별 규격은 다운로드 페이지의 그래픽 가이드라인을 참고하세요."
           />
+
+          <Link
+            href="/system/fabric-modular"
+            className="mt-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-2xl border border-aso-line bg-aso-offwhite p-6 hover:border-aso-primary transition-colors max-w-3xl"
+          >
+            <div>
+              <p className="text-eyebrow text-aso-primary mb-2">Fabric Modular System</p>
+              <h3 className="font-bold text-aso-black mb-1">패브릭 모듈러 시스템 (SEG) 자세히 보기</h3>
+              <p className="text-sm text-aso-charcoal-2/70 leading-relaxed">
+                이음새 없는 대형 그래픽 연출이 필요한 패브릭부스라면, 텐션 패브릭 기반 패브릭 모듈러 시스템 전용 페이지를 확인하세요.
+              </p>
+            </div>
+            <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-aso-primary shrink-0">
+              자세히 보기
+              <ArrowRight size={16} />
+            </span>
+          </Link>
         </Container>
       </section>
 
@@ -149,6 +193,8 @@ export default async function SystemPage() {
         </Container>
       </section>
 
+      <FaqSection eyebrow="FAQ" title="시스템부스 시공 자주 묻는 질문" items={SYSTEM_FAQ} />
+
       <section className="section-padding bg-white text-center">
         <Container className="max-w-xl">
           <h2 className="text-subheading text-aso-black mb-4">기술자료가 더 필요하신가요?</h2>
@@ -160,6 +206,27 @@ export default async function SystemPage() {
           </ButtonLink>
         </Container>
       </section>
+
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "Service",
+          serviceType: "시스템부스 시공",
+          name: "시스템부스 시공 서비스",
+          description:
+            "55mm/124mm 알루미늄 프레임과 패브릭(SEG) 모듈러 시스템을 활용한 전시부스·쇼룸·브랜드 공간 설계·시공·해체·재구성 서비스",
+          provider: { "@type": "Organization", name: "ASO SYSTEM" },
+          areaServed: "KR",
+          hasOfferCatalog: {
+            "@type": "OfferCatalog",
+            name: "시스템부스 시공 종류",
+            itemListElement: [
+              { "@type": "Offer", itemOffered: { "@type": "Service", name: "알루미늄 조립식 시스템부스 시공" } },
+              { "@type": "Offer", itemOffered: { "@type": "Service", name: "패브릭 모듈러 시스템(SEG) 시공" } },
+            ],
+          },
+        }}
+      />
     </div>
   );
 }
