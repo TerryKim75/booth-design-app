@@ -62,6 +62,9 @@ export async function POST(request: Request) {
     const resized = await sharp(inputBuffer)
       .rotate()
       .resize({ width: 2400, height: 2400, fit: "inside", withoutEnlargement: true })
+      // JPEG은 알파 채널을 지원하지 않아 투명 PNG를 그대로 변환하면 sharp가 기본값인
+      // 검정색으로 배경을 채운다. 흰 배경으로 명시적으로 깔아준다.
+      .flatten({ background: { r: 255, g: 255, b: 255 } })
       .jpeg({ quality: 85 })
       .toBuffer();
     // 작은 sharp 출력 버퍼가 Node의 공유 버퍼 풀에서 할당되어 이후 업로드 경로가

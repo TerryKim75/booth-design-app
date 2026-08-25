@@ -76,12 +76,12 @@ export default async function SystemPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-10">
             {frameSpecs.map((f) => (
               <div key={f.id} className="group rounded-2xl bg-white border border-aso-line overflow-hidden shadow-sm">
-                <div className="relative aspect-[16/10] overflow-hidden">
+                <div className="relative aspect-[16/10] overflow-hidden bg-white py-4">
                   <div className="absolute inset-0 transition-opacity duration-500 group-hover:opacity-0">
-                    <SafeImage src={f.applicationImage} alt={`${f.name} 적용 부스 사례`} fill className="object-cover" />
+                    <SafeImage src={f.applicationImage} alt={`${f.name} 적용 부스 사례`} fill className="object-contain" />
                   </div>
                   <div className="absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100">
-                    <SafeImage src={f.image} alt={`${f.name} 프레임`} fill className="object-cover" />
+                    <SafeImage src={f.image} alt={`${f.name} 프레임`} fill className="object-contain" />
                   </div>
                 </div>
                 <div className="p-3">
