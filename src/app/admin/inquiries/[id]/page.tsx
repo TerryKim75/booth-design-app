@@ -4,6 +4,46 @@ import { listUsers } from "@/lib/data/users";
 import { InquiryControls } from "@/app/admin/inquiries/inquiry-controls";
 import { addNote } from "@/app/admin/inquiries/actions";
 import { SubmitButton } from "@/components/admin/form-fields";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
+
+const INQUIRY_ATTACHMENTS_BUCKET = "inquiry-attachments";
+const SIGNED_URL_TTL_SECONDS = 60 * 60;
+
+interface AttachmentLink {
+  name: string;
+  viewUrl: string | null;
+  downloadUrl: string | null;
+}
+
+/** 첨부파일은 비공개 버킷에 파일 경로만 저장되므로 관리자 화면에서 서명 URL을 발급해 연다. */
+async function resolveAttachmentLinks(attachments: string[]): Promise<AttachmentLink[]> {
+  const name = (a: string) => a.split("/").pop() ?? a;
+  // 로컬 폴백(/uploads/...) 또는 절대 URL은 그대로 사용
+  const isDirect = (a: string) => a.startsWith("/") || /^https?:\/\//.test(a);
+
+  const storagePaths = attachments.filter((a) => !isDirect(a));
+  const signed = new Map<string, { view: string | null; download: string | null }>();
+
+  if (storagePaths.length > 0 && isSupabaseConfigured()) {
+    const bucket = createAdminSupabaseClient().storage.from(INQUIRY_ATTACHMENTS_BUCKET);
+    await Promise.all(
+      storagePaths.map(async (p) => {
+        const [view, download] = await Promise.all([
+          bucket.createSignedUrl(p, SIGNED_URL_TTL_SECONDS),
+          bucket.createSignedUrl(p, SIGNED_URL_TTL_SECONDS, { download: name(p) }),
+        ]);
+        signed.set(p, { view: view.data?.signedUrl ?? null, download: download.data?.signedUrl ?? null });
+      })
+    );
+  }
+
+  return attachments.map((a) => {
+    if (isDirect(a)) return { name: name(a), viewUrl: a, downloadUrl: a };
+    const s = signed.get(a);
+    return { name: name(a), viewUrl: s?.view ?? null, downloadUrl: s?.download ?? null };
+  });
+}
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -15,6 +55,7 @@ export default async function AdminInquiryDetailPage({ params }: PageProps) {
   if (!inquiry) notFound();
 
   const staffUsers = users.filter((u) => u.status === "active");
+  const attachmentLinks = await resolveAttachmentLinks(inquiry.attachments);
 
   const facts: [string, string][] = [
     ["회사명", inquiry.company],
@@ -57,12 +98,22 @@ export default async function AdminInquiryDetailPage({ params }: PageProps) {
       {inquiry.attachments.length > 0 && (
         <div className="bg-white border border-aso-line p-6 mb-6">
           <h2 className="font-bold text-aso-black mb-3">첨부파일</h2>
-          <ul className="space-y-1.5 text-sm">
-            {inquiry.attachments.map((a) => (
-              <li key={a}>
-                <a href={a} className="text-aso-primary hover:underline" target="_blank" rel="noreferrer">
-                  {a.split("/").pop()}
-                </a>
+          <ul className="space-y-2 text-sm">
+            {attachmentLinks.map((a) => (
+              <li key={a.name} className="flex items-center gap-3">
+                <span className="text-aso-black break-all flex-1">{a.name}</span>
+                {a.viewUrl ? (
+                  <>
+                    <a href={a.viewUrl} className="px-5 py-2 border border-aso-line text-aso-primary hover:bg-aso-primary/5" target="_blank" rel="noreferrer">
+                      보기
+                    </a>
+                    <a href={a.downloadUrl ?? a.viewUrl} download={a.name} className="px-5 py-2 bg-aso-primary text-white hover:opacity-90">
+                      다운로드
+                    </a>
+                  </>
+                ) : (
+                  <span className="text-aso-muted">파일을 찾을 수 없습니다</span>
+                )}
               </li>
             ))}
           </ul>
