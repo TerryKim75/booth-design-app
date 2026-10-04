@@ -1,29 +1,47 @@
 import "server-only";
+import { randomUUID } from "node:crypto";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { getLocalStore } from "@/lib/data/local-store";
 import type { Notice } from "@/types/domain";
-import type { DbRow } from "@/lib/data/row-types";
 
 /**
- * notices 테이블은 RLS 정책 없이(전부 차단) 두고 service role로만 접근한다.
- * 권한 검사는 호출부(requireStaffOrAdmin / requireAdmin)에서 담당한다.
+ * 공지는 별도 테이블 없이 비공개 Storage 버킷의 JSON 파일 하나에 저장한다.
+ * service role로만 읽고 쓰며, 권한 검사는 호출부(requireStaffOrAdmin / requireAdmin)에서 담당한다.
  */
-function db() {
-  return createAdminSupabaseClient();
+const NOTICES_BUCKET = "admin-notices";
+const NOTICES_FILE = "notices.json";
+
+function bucket() {
+  return createAdminSupabaseClient().storage.from(NOTICES_BUCKET);
 }
 
-function rowToNotice(row: DbRow): Notice {
-  return {
-    id: row.id,
-    title: row.title,
-    body: row.body ?? "",
-    status: row.status,
-    isPinned: row.is_pinned,
-    authorName: row.author_name ?? null,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
+async function readAll(): Promise<Notice[]> {
+  if (!isSupabaseConfigured()) return getLocalStore().notices;
+  const { data, error } = await bucket().download(NOTICES_FILE);
+  if (error) {
+    // 아직 공지를 한 번도 저장하지 않아 파일(또는 버킷)이 없는 경우
+    if (/not.?found/i.test(error.message) || (error as { statusCode?: string }).statusCode === "404") return [];
+    throw error;
+  }
+  return JSON.parse(await data.text()) as Notice[];
+}
+
+async function writeAll(items: Notice[]): Promise<void> {
+  if (!isSupabaseConfigured()) {
+    getLocalStore().notices = items;
+    return;
+  }
+  const body = JSON.stringify(items);
+  const upload = () =>
+    bucket().upload(NOTICES_FILE, body, { contentType: "application/json", upsert: true, cacheControl: "0" });
+  let { error } = await upload();
+  if (error && /bucket.*not.?found/i.test(error.message)) {
+    const created = await createAdminSupabaseClient().storage.createBucket(NOTICES_BUCKET, { public: false });
+    if (created.error) throw created.error;
+    ({ error } = await upload());
+  }
+  if (error) throw error;
 }
 
 /** 고정 공지 먼저, 그다음 최신순 */
@@ -32,80 +50,30 @@ function sortNotices(items: Notice[]): Notice[] {
 }
 
 export async function listNotices(opts: { includeUnpublished?: boolean; limit?: number } = {}): Promise<Notice[]> {
-  if (!isSupabaseConfigured()) {
-    const items = sortNotices(
-      getLocalStore().notices.filter((n) => opts.includeUnpublished || n.status === "published")
-    );
-    return opts.limit ? items.slice(0, opts.limit) : items;
-  }
-  const supabase = db();
-  let query = supabase
-    .from("notices")
-    .select("*")
-    .order("is_pinned", { ascending: false })
-    .order("created_at", { ascending: false });
-  if (!opts.includeUnpublished) query = query.eq("status", "published");
-  if (opts.limit) query = query.limit(opts.limit);
-  const { data, error } = await query;
-  if (error) throw error;
-  return (data ?? []).map(rowToNotice);
+  const items = sortNotices((await readAll()).filter((n) => opts.includeUnpublished || n.status === "published"));
+  return opts.limit ? items.slice(0, opts.limit) : items;
 }
 
 export async function getNoticeById(id: string): Promise<Notice | null> {
-  if (!isSupabaseConfigured()) {
-    return getLocalStore().notices.find((n) => n.id === id) ?? null;
-  }
-  const supabase = db();
-  const { data, error } = await supabase.from("notices").select("*").eq("id", id).maybeSingle();
-  if (error) throw error;
-  return data ? rowToNotice(data) : null;
+  return (await readAll()).find((n) => n.id === id) ?? null;
 }
 
 export type NoticeInput = Omit<Notice, "id" | "createdAt" | "updatedAt">;
 
-function toDbRow(v: Partial<NoticeInput>) {
-  const row: DbRow = {};
-  if (v.title !== undefined) row.title = v.title;
-  if (v.body !== undefined) row.body = v.body;
-  if (v.status !== undefined) row.status = v.status;
-  if (v.isPinned !== undefined) row.is_pinned = v.isPinned;
-  if (v.authorName !== undefined) row.author_name = v.authorName;
-  return row;
-}
-
 export async function createNotice(input: NoticeInput): Promise<Notice> {
-  if (!isSupabaseConfigured()) {
-    const store = getLocalStore();
-    const now = new Date().toISOString();
-    const item: Notice = { ...input, id: `notice-${Date.now()}`, createdAt: now, updatedAt: now };
-    store.notices.push(item);
-    return item;
-  }
-  const supabase = db();
-  const { data, error } = await supabase.from("notices").insert(toDbRow(input)).select("*").single();
-  if (error) throw error;
-  return rowToNotice(data);
+  const items = await readAll();
+  const now = new Date().toISOString();
+  const item: Notice = { ...input, id: randomUUID(), createdAt: now, updatedAt: now };
+  await writeAll([...items, item]);
+  return item;
 }
 
 export async function updateNotice(id: string, patch: Partial<NoticeInput>): Promise<void> {
-  if (!isSupabaseConfigured()) {
-    const store = getLocalStore();
-    const idx = store.notices.findIndex((n) => n.id === id);
-    if (idx >= 0) store.notices[idx] = { ...store.notices[idx], ...patch, updatedAt: new Date().toISOString() };
-    return;
-  }
-  const supabase = db();
-  const { error } = await supabase.from("notices").update(toDbRow(patch)).eq("id", id);
-  if (error) throw error;
+  const items = await readAll();
+  await writeAll(items.map((n) => (n.id === id ? { ...n, ...patch, updatedAt: new Date().toISOString() } : n)));
 }
 
 export async function deleteNotice(id: string): Promise<void> {
-  if (!isSupabaseConfigured()) {
-    const store = getLocalStore();
-    store.notices = store.notices.filter((n) => n.id !== id);
-    return;
-  }
-  const supabase = db();
-  const { error } = await supabase.from("notices").delete().eq("id", id);
-  if (error) throw error;
+  const items = await readAll();
+  await writeAll(items.filter((n) => n.id !== id));
 }
