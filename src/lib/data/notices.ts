@@ -1,8 +1,17 @@
+import "server-only";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin";
 import { getLocalStore } from "@/lib/data/local-store";
 import type { Notice } from "@/types/domain";
 import type { DbRow } from "@/lib/data/row-types";
+
+/**
+ * notices 테이블은 RLS 정책 없이(전부 차단) 두고 service role로만 접근한다.
+ * 권한 검사는 호출부(requireStaffOrAdmin / requireAdmin)에서 담당한다.
+ */
+function db() {
+  return createAdminSupabaseClient();
+}
 
 function rowToNotice(row: DbRow): Notice {
   return {
@@ -29,7 +38,7 @@ export async function listNotices(opts: { includeUnpublished?: boolean; limit?: 
     );
     return opts.limit ? items.slice(0, opts.limit) : items;
   }
-  const supabase = await createServerSupabaseClient();
+  const supabase = db();
   let query = supabase
     .from("notices")
     .select("*")
@@ -46,7 +55,7 @@ export async function getNoticeById(id: string): Promise<Notice | null> {
   if (!isSupabaseConfigured()) {
     return getLocalStore().notices.find((n) => n.id === id) ?? null;
   }
-  const supabase = await createServerSupabaseClient();
+  const supabase = db();
   const { data, error } = await supabase.from("notices").select("*").eq("id", id).maybeSingle();
   if (error) throw error;
   return data ? rowToNotice(data) : null;
@@ -72,7 +81,7 @@ export async function createNotice(input: NoticeInput): Promise<Notice> {
     store.notices.push(item);
     return item;
   }
-  const supabase = await createServerSupabaseClient();
+  const supabase = db();
   const { data, error } = await supabase.from("notices").insert(toDbRow(input)).select("*").single();
   if (error) throw error;
   return rowToNotice(data);
@@ -85,7 +94,7 @@ export async function updateNotice(id: string, patch: Partial<NoticeInput>): Pro
     if (idx >= 0) store.notices[idx] = { ...store.notices[idx], ...patch, updatedAt: new Date().toISOString() };
     return;
   }
-  const supabase = await createServerSupabaseClient();
+  const supabase = db();
   const { error } = await supabase.from("notices").update(toDbRow(patch)).eq("id", id);
   if (error) throw error;
 }
@@ -96,7 +105,7 @@ export async function deleteNotice(id: string): Promise<void> {
     store.notices = store.notices.filter((n) => n.id !== id);
     return;
   }
-  const supabase = await createServerSupabaseClient();
+  const supabase = db();
   const { error } = await supabase.from("notices").delete().eq("id", id);
   if (error) throw error;
 }
