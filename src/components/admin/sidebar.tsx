@@ -7,26 +7,32 @@ import { signOut } from "@/app/(site)/login/actions";
 import { useRouter } from "next/navigation";
 import {
   LayoutDashboard, Images, Boxes, Sofa, FileDown, Mail, Users, Settings, LogOut, ExternalLink, Ruler,
-  Building2, HardHat, FolderKanban,
+  Building2, HardHat, FolderKanban, Wand2, UserPlus, HelpCircle, Megaphone,
 } from "lucide-react";
 import type { UserRole } from "@/types/domain";
 
 const NAV = [
   { href: "/admin", label: "대시보드", icon: LayoutDashboard, roles: ["admin", "staff"] },
+  { href: "/admin/notices", label: "공지사항", icon: Megaphone, roles: ["admin"] },
   { href: "/admin/portfolio", label: "포트폴리오", icon: Images, roles: ["admin", "staff"] },
   { href: "/admin/booth-designs", label: "시스템 부스 디자인", icon: Boxes, roles: ["admin", "staff"] },
+  { href: "/admin/booth-quotes", label: "디자인 자동화 견적", icon: Wand2, roles: ["admin", "staff"] },
   { href: "/admin/frame-specs", label: "Frame Specification", icon: Ruler, roles: ["admin", "staff"] },
   { href: "/admin/rentals", label: "비품 임대", icon: Sofa, roles: ["admin", "staff"] },
   { href: "/admin/downloads", label: "다운로드 자료", icon: FileDown, roles: ["admin", "staff"] },
+  { href: "/admin/faqs", label: "Q&A 관리", icon: HelpCircle, roles: ["admin", "staff"] },
   { href: "/admin/inquiries", label: "문의 관리", icon: Mail, roles: ["admin", "staff"] },
   { href: "/admin/clients", label: "고객사 관리", icon: Building2, roles: ["admin", "staff"] },
+  { href: "/admin/client-signup-requests", label: "고객사 가입 요청", icon: UserPlus, roles: ["admin", "staff"] },
   { href: "/admin/client-projects", label: "고객 프로젝트", icon: FolderKanban, roles: ["admin", "staff"] },
   { href: "/admin/construction-teams", label: "시공팀 관리", icon: HardHat, roles: ["admin", "staff"] },
   { href: "/admin/users", label: "사용자 관리", icon: Users, roles: ["admin"] },
   { href: "/admin/settings", label: "사이트 설정", icon: Settings, roles: ["admin"] },
 ] as const;
 
-export function AdminSidebar({ role, name }: { role: UserRole; name: string }) {
+export function AdminSidebar({
+  role, name, pendingSignupRequestCount = 0,
+}: { role: UserRole; name: string; pendingSignupRequestCount?: number }) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -54,7 +60,12 @@ export function AdminSidebar({ role, name }: { role: UserRole; name: string }) {
               )}
             >
               <item.icon size={17} />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {item.href === "/admin/client-signup-requests" && pendingSignupRequestCount > 0 && (
+                <span className="inline-flex items-center justify-center min-w-5 h-5 px-1 rounded-full bg-aso-primary text-white text-[11px] font-bold font-num">
+                  {pendingSignupRequestCount}
+                </span>
+              )}
             </Link>
           );
         })}

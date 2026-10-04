@@ -143,9 +143,9 @@ export interface RentalItem {
   slug: string;
   name: string;
   category: RentalCategory;
-  width: number;
-  depth: number;
-  height: number;
+  width: number | null;
+  depth: number | null;
+  height: number | null;
   color: string;
   material: string;
   description: string;
@@ -233,6 +233,36 @@ export interface InquiryNote {
   createdAt: string;
 }
 
+export type FaqPageKey =
+  | "system"
+  | "fabric_modular"
+  | "guide_system_booth_contractor"
+  | "guide_system_booth_vs_wood_booth"
+  | "guide_system_booth_cost"
+  | "guide_kintex_coex_booth_construction";
+
+export interface Faq {
+  id: string;
+  pageKey: FaqPageKey;
+  question: string;
+  answer: string;
+  status: ContentStatus;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Notice {
+  id: string;
+  title: string;
+  body: string;
+  status: ContentStatus;
+  isPinned: boolean;
+  authorName: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface SiteSetting {
   id: string;
   key: string;
@@ -267,6 +297,22 @@ export interface BoothQuote {
   lightingType: string;
   graphicCoverage: string;
   status: BoothQuoteStatus;
+  createdAt: string;
+}
+
+export type ClientSignupRequestStatus = "pending" | "approved" | "rejected";
+
+/** 고객사 포털 계정 생성 요청 — 공개 회원가입이 없어, 관리자가 검토 후 clients+계정을 생성한다. */
+export interface ClientSignupRequest {
+  id: string;
+  companyName: string;
+  contactName: string;
+  email: string;
+  phone: string;
+  note: string;
+  status: ClientSignupRequestStatus;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
   createdAt: string;
 }
 

@@ -7,6 +7,7 @@ import { inquirySeed } from "@/lib/seed-data/inquiries";
 import { siteSettingSeed } from "@/lib/seed-data/site-settings";
 import { userSeed } from "@/lib/seed-data/users";
 import { frameSpecSeed } from "@/lib/seed-data/frame-specs";
+import { faqSeed } from "@/lib/seed-data/faqs";
 import type {
   Portfolio,
   BoothDesign,
@@ -16,11 +17,14 @@ import type {
   SiteSetting,
   AsoUser,
   FrameSpec,
+  Faq,
+  Notice,
   Client,
   ConstructionTeam,
   ClientProject,
   ClientProjectFile,
   BoothQuote,
+  ClientSignupRequest,
 } from "@/types/domain";
 
 /**
@@ -48,11 +52,14 @@ type Store = {
   siteSettings: SiteSetting[];
   users: AsoUser[];
   frameSpecs: FrameSpec[];
+  faqs: Faq[];
+  notices: Notice[];
   clients: Client[];
   constructionTeams: ConstructionTeam[];
   clientProjects: ClientProject[];
   clientProjectFiles: ClientProjectFile[];
   boothQuotes: BoothQuote[];
+  clientSignupRequests: ClientSignupRequest[];
 };
 
 const globalForStore = globalThis as unknown as { __asoLocalStore?: Store };
@@ -83,6 +90,7 @@ function buildStore(): Store {
     })),
     siteSettings: siteSettingSeed.map((s, i) => ({ ...s, id: `setting-${i + 1}`, updatedAt: now })),
     frameSpecs: withMeta<FrameSpec>(frameSpecSeed, "framespec"),
+    faqs: withMeta<Faq>(faqSeed, "faq"),
     users: userSeed.map((u, i) => ({
       id: i === 0 ? "seed-admin" : "seed-staff",
       name: u.name,
@@ -98,6 +106,8 @@ function buildStore(): Store {
     clientProjects: [],
     clientProjectFiles: [],
     boothQuotes: [],
+    clientSignupRequests: [],
+    notices: [],
   };
 }
 
