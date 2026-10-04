@@ -7,7 +7,7 @@ create table public.notices (
   id uuid primary key default gen_random_uuid(),
   title text not null,
   body text not null default '',
-  status public.content_status not null default 'published'::public.content_status,
+  status text not null default 'published' check (status in ('draft', 'published', 'unpublished')),
   is_pinned boolean not null default false,
   author_name text,
   created_at timestamptz not null default now(),
